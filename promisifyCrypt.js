@@ -16,5 +16,7 @@ console.log(await encryptPassword(data)); // 16384
 console.timeEnd("PBKDF2");
 
 console.time("SCRYPT");
-console.log(crypto.scryptSync(data, salt, 128, { N: 16384 }));
+console.log(
+  crypto.scryptSync(data, salt, 128, { N: 16384 }).toString("base64")
+);
 console.timeEnd("SCRYPT");
