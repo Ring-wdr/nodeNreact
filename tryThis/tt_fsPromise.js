@@ -52,4 +52,41 @@ try {
   //   readFile(kingNameFile,'utf-8').then(data=>{
   //     console.log(kingNameFile, 'n')
   //   })
+
+  //4. non-block folder tree
+  const result = {};
+  const printResult = (obj, depth = 0) => {
+    for (const k of Object.keys(obj)) {
+      console.log("  ".repeat(depth), k);
+      printResult(obj[k], depth + 1);
+    }
+  };
+  let pendingCnt = 0;
+  const ls2 = (fld, obj) => {
+    const bname = basename(fld);
+    obj[bname] = {};
+    readdir(fld, { withFileTypes: true })
+      .then((files) => {
+        for (const file of files) {
+          const { name: fname } = file;
+          if (
+            !file.isDirectory() ||
+            fname.startsWith(".") ||
+            fname === "node_modules"
+          )
+            continue;
+          pendingCnt += 1;
+          ls2(fld + "/" + fname, obj[bname]);
+        }
+      })
+      .catch((err) => console.error(err))
+      .finally((res) => {
+        pendingCnt -= 1;
+        // console.log("result>>", result);
+        // console.log("pendingCnt :>> ", pendingCnt);
+        pendingCnt < 0 && printResult(result);
+        // console.log(JSON.stringify(result, null, "  "));
+      });
+  };
+  ls2(curr, result);
 } catch (err) {}

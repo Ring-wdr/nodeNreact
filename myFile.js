@@ -37,45 +37,73 @@ const { mkdir, writeFile, readdir, readFile, rm } = fs.promises;
 
 // then
 
-const recur = (dirName = ".", depth = 0, prev = "", arr = []) => {
-  readdir(prev + dirName, { withFileTypes: true })
-    .then((res, rej) =>
-      res
-        .filter((p) =>
-          !p.isDirectory() || p.name[0] === "." || p.name === "node_modules"
-            ? false
-            : true
-        )
-        .map((dir) => dir.name)
-    )
-    .then((res, rej) => {
-      if (res.length === 0) console.log(arr.map((val) => val[0]).join(" - "));
-      for (const dir of res) {
-        recur(dir, depth + 1, prev + dirName + "/", [...arr, [dir, depth]]);
+const closureRecur = (() => {
+  const obj = {};
+  let numOfElements = 0;
+  let state = 0;
+  let timer = setInterval(() => {
+    if (state < numOfElements) {
+      state = numOfElements;
+    } else if (state === numOfElements) {
+      console.log(JSON.stringify(obj, null, "  "));
+      clearInterval(timer);
+    }
+  }, 100);
+  const recur = (dirName = ".", depth = 0, prev = "", arr = ["root"]) => {
+    if (depth === 0) {
+      numOfElements = 0;
+      state = 0;
+      for (const key of Object.keys(obj)) {
+        delete obj[key];
       }
-    });
-};
+    }
+    readdir(prev + dirName, { withFileTypes: true })
+      .then((res, rej) =>
+        res
+          .filter((p) =>
+            !p.isDirectory() || p.name[0] === "." || p.name === "node_modules"
+              ? false
+              : true
+          )
+          .map((dir) => dir.name)
+      )
+      .then((res, rej) => {
+        if (res.length === 0) {
+          let node = obj;
+          arr.forEach((ele) => {
+            numOfElements += 1;
+            if (!node[ele]) node[ele] = {};
+            node = node[ele];
+          });
+        }
+        for (const dir of res) {
+          recur(dir, depth + 1, prev + dirName + "/", [...arr, dir]);
+        }
+      });
+  };
+  return recur;
+})();
 
 try {
   await mkdir(projectFolder, { recursive: true });
-  await mkdir(new URL("./king/sejong/nam", import.meta.url), {
-    recursive: true,
-  });
-  await mkdir(new URL("./king/sejong/nam/js", import.meta.url), {
-    recursive: true,
-  });
-  await mkdir(new URL("./king/sejong/nam/ts", import.meta.url), {
-    recursive: true,
-  });
-  await mkdir(new URL("./king/taejong/", import.meta.url), { recursive: true });
-  await mkdir(new URL("./king/taejong/adul", import.meta.url), {
-    recursive: true,
-  });
+  // await mkdir(new URL("./king/sejong/nam", import.meta.url), {
+  //   recursive: true,
+  // });
+  // await mkdir(new URL("./king/sejong/nam/js", import.meta.url), {
+  //   recursive: true,
+  // });
+  // await mkdir(new URL("./king/sejong/nam/ts", import.meta.url), {
+  //   recursive: true,
+  // });
+  // await mkdir(new URL("./king/taejong/", import.meta.url), { recursive: true });
+  // await mkdir(new URL("./king/taejong/adul", import.meta.url), {
+  //   recursive: true,
+  // });
   await writeFile("./king/king_names.txt", "세종대왕");
   await writeFile("./king/sejong/sejong.txt", "훈민정음");
 
   // console.log("file list>>>");
-  recur();
+  closureRecur();
 
   readFile("./king/king_names.txt")
     .then((res, rej) => {
@@ -90,7 +118,7 @@ try {
     })
     .finally(async (res, rej) => {
       console.log("file list>>>");
-      recur();
+      // closureRecur();
     });
 } catch (err) {
   console.error(err);
